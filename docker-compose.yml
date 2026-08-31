@@ -1,0 +1,16 @@
+services:
+  clipsearch-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clipsearch-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      LEAD_EMAIL: ""
+    volumes:
+      - clipsearch-data:/var/www/html/storage
+
+volumes:
+  clipsearch-data:

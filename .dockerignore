@@ -1,0 +1,6 @@
+.git
+.gitignore
+storage/*.jsonl
+storage/*.log
+README.md
+start-local.bat
