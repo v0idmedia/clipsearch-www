@@ -9,6 +9,8 @@ services:
       - "8080:80"
     environment:
       LEAD_EMAIL: ""
+      TURNSTILE_SITE_KEY: "${TURNSTILE_SITE_KEY:-}"
+      TURNSTILE_SECRET_KEY: "${TURNSTILE_SECRET_KEY:-}"
     volumes:
       - clipsearch-data:/var/www/html/storage
 

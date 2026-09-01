@@ -1,5 +1,7 @@
 Options -Indexes
 
+AddType application/manifest+json .webmanifest
+
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "SAMEORIGIN"
@@ -10,7 +12,11 @@ Options -Indexes
   ExpiresActive On
   ExpiresByType image/jpeg "access plus 30 days"
   ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType image/x-icon "access plus 30 days"
   ExpiresByType image/svg+xml "access plus 30 days"
+  ExpiresByType application/pdf "access plus 30 days"
+  ExpiresByType application/manifest+json "access plus 7 days"
   ExpiresByType font/ttf "access plus 1 year"
   ExpiresByType text/css "access plus 7 days"
   ExpiresByType application/javascript "access plus 7 days"

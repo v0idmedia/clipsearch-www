@@ -4,6 +4,15 @@ declare(strict_types=1);
 $submitted = isset($_GET['sent']) && $_GET['sent'] === '1';
 $initialError = isset($_GET['error']) ? trim((string)$_GET['error']) : '';
 
+$requestHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+$requestHost = (string)preg_replace('/:\d+$/', '', $requestHost);
+$isLocalRequest = in_array($requestHost, ['localhost', '127.0.0.1', '[::1]', '::1'], true);
+$turnstileSiteKey = trim((string)(getenv('TURNSTILE_SITE_KEY') ?: ''));
+if ($turnstileSiteKey === '' && $isLocalRequest) {
+    $turnstileSiteKey = '1x00000000000000000000BB';
+}
+$turnstileConfigured = $turnstileSiteKey !== '';
+
 function icon(string $name, string $class = 'icon'): string
 {
     $icons = [
@@ -22,6 +31,9 @@ function icon(string $name, string $class = 'icon'): string
         'scan' => '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="11" cy="11" r="4"/><path d="m15 15 3 3"/>',
         'gauge' => '<path d="M20 13a8 8 0 1 0-16 0"/><path d="m12 13 4-4M4 17h16"/>',
         'phone' => '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c1 .3 1.9.6 2.9.7a2 2 0 0 1 1.7 2Z"/>',
+        'smartphone' => '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
+        'panel' => '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M7 6h.01M11 6h.01M15 6h.01M8 13h8M8 17h5"/>',
+        'server' => '<rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01M10 6h8M10 18h8"/>',
         'mail' => '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-9 5.7a2 2 0 0 1-2 0L2 7"/>',
         'map' => '<path d="M20 10c0 5-5.5 10.2-7.4 11.8a1 1 0 0 1-1.2 0C9.5 20.2 4 15 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
         'x' => '<path d="M18 6 6 18M6 6l12 12"/>',
@@ -35,29 +47,47 @@ function icon(string $name, string $class = 'icon'): string
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CLIP Search — автоматическая проверка рекламных фотоотчётов</title>
+  <title>CLIP Search | Автоматизация проверки размещения наружной рекламы</title>
   <meta name="description" content="Программа на базе Machine Vision и AI находит рекламные макеты на фото стендов, ускоряет проверку в 5–10 раз и формирует готовый XLSX-отчёт.">
   <meta name="keywords" content="проверка фотоотчётов, автоматизация рекламного агентства, поиск рекламного макета на фото, контроль размещения рекламы, machine vision, распознавание изображений, CLIP Search">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://clipsearch.ru/">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#7330a8">
+  <meta name="msapplication-config" content="/browserconfig.xml">
+  <meta name="msapplication-TileColor" content="#7330a8">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ru_RU">
   <meta property="og:site_name" content="CLIP Search">
   <meta property="og:title" content="CLIP Search — фотоотчёты проверяются сами">
   <meta property="og:description" content="Автоматическая проверка размещения рекламных макетов на сотнях фотографий за минуты.">
+  <meta property="og:url" content="https://clipsearch.ru/">
   <meta property="og:image" content="https://clipsearch.ru/og.png">
+  <meta property="og:image:secure_url" content="https://clipsearch.ru/og.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1672">
+  <meta property="og:image:height" content="941">
+  <meta property="og:image:alt" content="CLIP Search — автоматическая проверка рекламных фотоотчётов">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="CLIP Search — фотоотчёты проверяются сами">
+  <meta name="twitter:description" content="Автоматическая проверка размещения рекламных макетов на сотнях фотографий за минуты.">
+  <meta name="twitter:image" content="https://clipsearch.ru/og.png">
   <link rel="preload" href="/assets/fonts/mulish-variable.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="/assets/style.css">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CLIP Search","applicationCategory":"BusinessApplication","operatingSystem":"Windows","description":"Программа автоматизации проверки размещения рекламных макетов на фотографиях стендов.","url":"https://clipsearch.ru/","image":"https://clipsearch.ru/og.png","provider":{"@type":"Organization","name":"VOID MEDIA","url":"https://voidmedia.ru/","telephone":"+7-499-677-68-83"},"offers":{"@type":"Offer","priceCurrency":"RUB","price":"59000","description":"Профессиональная лицензия от 59 000 рублей в год"}}</script>
+  <?php if ($turnstileConfigured): ?><link rel="preconnect" href="https://challenges.cloudflare.com"><?php endif; ?>
+  <link rel="stylesheet" href="/assets/style.css?v=20260901">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CLIP Search","applicationCategory":"BusinessApplication","operatingSystem":"Windows","description":"Программа автоматизации проверки размещения рекламных макетов на фотографиях стендов.","url":"https://clipsearch.ru/","image":"https://clipsearch.ru/og.png","provider":{"@type":"Organization","name":"VOID MEDIA","url":"https://voidmedia.ru/","telephone":"+7-499-677-68-83"},"offers":{"@type":"Offer","priceCurrency":"RUB","price":"49990","description":"Профессиональная лицензия до 5 пользователей за 49 990 рублей в год"}}</script>
 </head>
 <body>
 <main>
   <header class="site-header">
     <a href="#top" class="brand" aria-label="CLIP Search — на главную"><img src="/assets/logo.png" alt="CLIP Search"></a>
     <nav aria-label="Основная навигация"><a href="#how">Как работает</a><a href="#features">Возможности</a><a href="#pricing">Тарифы</a></nav>
-    <a class="header-cta" href="#lead-modal" data-open-form>Получить демо</a>
+    <a class="header-cta" href="#contact" data-open-form>Получить демо</a>
   </header>
 
   <section class="hero" id="top">
@@ -65,8 +95,8 @@ function icon(string $name, string $class = 'icon'): string
       <div class="eyebrow"><?= icon('sparkle') ?> Machine Vision + AI</div>
       <h1>Фотоотчёты проверяются <em>сами</em></h1>
       <p class="hero-lead">CLIP Search находит рекламный макет на сотнях фотографий стендов и сокращает ручную проверку на 80–95%.</p>
-      <div class="hero-actions"><a class="button primary" href="#lead-modal" data-open-form>Запросить демонстрацию <?= icon('arrow') ?></a><a class="button ghost" href="#how">Посмотреть, как это работает</a></div>
-      <ul class="hero-points"><li><?= icon('check') ?> 100+ фото за минуты</li><li><?= icon('check') ?> XLSX-отчёт без ручной сверки</li></ul>
+      <div class="hero-actions"><a class="button primary" href="#contact" data-open-form>Запросить демонстрацию <?= icon('arrow') ?></a><a class="button ghost" href="#how">Как это работает</a></div>
+      <ul class="hero-points"><li><?= icon('check') ?> 100+ фото за минуту</li><li><?= icon('check') ?> XLSX-отчёт без ручной сверки</li></ul>
     </div>
 
     <div class="search-demo reveal delay-1" aria-label="Пример поиска макета на фотографии стенда">
@@ -87,7 +117,7 @@ function icon(string $name, string $class = 'icon'): string
   <section class="section problem-section">
     <div class="section-heading narrow"><span class="kicker">Не листать. Не сверять. Не ошибаться.</span><h2>Пока менеджер смотрит фото по одному, CLIP Search уже готовит отчёт</h2><p>Программа берёт на себя однообразную часть контроля размещения, а специалист подключается только там, где действительно нужна оценка.</p></div>
     <div class="compare-grid">
-      <article class="compare-card manual"><span class="compare-label"><?= icon('clock') ?> Вручную</span><strong>4–8 часов</strong><p>Открыть каждый файл, найти макет, сверить версию, отметить статус, перенести результат в таблицу.</p><div class="manual-stack" aria-hidden="true"><span style="transform:translate(0,0) rotate(-2deg)"></span><span style="transform:translate(7px,5px) rotate(-1deg)"></span><span style="transform:translate(14px,10px)"></span><span style="transform:translate(21px,15px) rotate(1deg)"></span><span style="transform:translate(28px,20px) rotate(2deg)"></span></div></article>
+      <article class="compare-card manual" data-card-trail><span class="compare-label"><?= icon('clock') ?> Вручную</span><strong>4–8 часов</strong><p>Открыть каждый файл, найти макет, сверить версию, отметить статус, перенести результат в таблицу.</p><div class="manual-trail" aria-hidden="true"></div></article>
       <article class="compare-card auto"><span class="compare-label"><?= icon('sparkle') ?> С CLIP Search</span><strong>несколько минут</strong><p>Выбрать макет и папку. Алгоритм проверит снимки, разметит совпадения и соберёт XLSX.</p><div class="auto-progress" aria-hidden="true"><span></span><i>100%</i></div></article>
     </div>
   </section>
@@ -139,11 +169,35 @@ function icon(string $name, string $class = 'icon'): string
   </section>
 
   <section class="section pricing-section" id="pricing">
-    <div class="section-heading narrow"><span class="kicker">Варианты запуска</span><h2>Начните с пилота — масштабируйте после результата</h2><p>Предварительная модель стоимости для продаж. Финальная лицензия зависит от числа рабочих мест, объёма фото и требуемых модулей.</p></div>
+    <div class="section-heading narrow"><span class="kicker">Варианты запуска</span><h2>Начните с демо — масштабируйте после результата</h2><p>Предварительная модель стоимости для продаж. Финальная лицензия зависит от числа рабочих мест, объёма фото и требуемых модулей.</p></div>
     <div class="pricing-grid">
-      <article class="price-card"><span class="price-name">Пилот</span><h3>Бесплатно</h3><p>Проверим ваш макет на тестовой выборке и покажем итоговый отчёт.</p><ul><li><?= icon('check') ?> 1 рекламный макет</li><li><?= icon('check') ?> До 100 фото</li><li><?= icon('check') ?> Демонстрация результата</li></ul><a href="#lead-modal" data-open-form class="price-button">Запросить пилот <?= icon('arrow') ?></a></article>
-      <article class="price-card featured"><span class="popular">Популярный</span><span class="price-name">Профессиональный</span><h3>от 59 000 ₽<small>/год</small></h3><p>Для регулярной проверки фотоотчётов одной команды.</p><ul><li><?= icon('check') ?> Неограниченные папки</li><li><?= icon('check') ?> XLSX и разметка кадров</li><li><?= icon('check') ?> Устойчивый поиск и ROI</li><li><?= icon('check') ?> Обновления и поддержка</li></ul><a href="#lead-modal" data-open-form class="price-button">Получить предложение <?= icon('arrow') ?></a></article>
-      <article class="price-card"><span class="price-name">Корпоративный</span><h3>По запросу</h3><p>Для больших потоков, нескольких команд и индивидуального контура.</p><ul><li><?= icon('check') ?> Несколько рабочих мест</li><li><?= icon('check') ?> GPU-ускорение</li><li><?= icon('check') ?> Текстовая валидация</li><li><?= icon('check') ?> Настройка под ваши данные</li></ul><a href="#lead-modal" data-open-form class="price-button">Обсудить задачу <?= icon('arrow') ?></a></article>
+      <article class="price-card"><span class="price-name">Демо</span><h3>Бесплатно</h3><p>Проверим ваш макет на тестовой выборке и покажем итоговый отчёт.</p><ul><li><?= icon('check') ?> 1 рекламный макет</li><li><?= icon('check') ?> До 100 фото</li><li><?= icon('check') ?> Демонстрация результата</li></ul><a href="#contact" data-open-form class="price-button">Запросить демо <?= icon('arrow') ?></a></article>
+      <article class="price-card featured"><span class="popular">Популярный</span><span class="price-name">Профессиональный</span><h3>49 990 ₽<small>/год</small></h3><p>Для регулярной проверки фотоотчётов одной команды.</p><ul><li><?= icon('check') ?> До 5 пользователей</li><li><?= icon('check') ?> Неограниченные папки</li><li><?= icon('check') ?> XLSX и разметка кадров</li><li><?= icon('check') ?> Устойчивый поиск и ROI</li><li><?= icon('check') ?> Обновления и поддержка</li></ul><a href="#contact" data-open-form class="price-button">Получить предложение <?= icon('arrow') ?></a></article>
+      <article class="price-card"><span class="price-name">Корпоративный</span><h3>По запросу</h3><p>Для больших потоков, нескольких команд и индивидуального контура.</p><ul><li><?= icon('check') ?> Несколько рабочих мест</li><li><?= icon('check') ?> GPU-ускорение</li><li><?= icon('check') ?> Текстовая валидация</li><li><?= icon('check') ?> Настройка под ваши данные</li></ul><a href="#contact" data-open-form class="price-button">Обсудить задачу <?= icon('arrow') ?></a></article>
+    </div>
+    <p class="pricing-disclaimer">Работаем исключительно с юридическими лицами и ИП. Указанные цены и условия носят информационный характер и не являются публичной офертой.</p>
+  </section>
+
+  <section class="section custom-system-section" id="custom-system">
+    <div class="custom-system-card">
+      <div class="custom-system-copy">
+        <span class="kicker">Индивидуальная разработка</span>
+        <h2>Система автоматической проверки наружной рекламы</h2>
+        <p>Разработаем единый контур контроля размещения: от постановки задания исполнителю до проверки геолокации, даты съёмки, рекламного макета и готового отчёта.</p>
+        <div class="custom-system-features">
+          <article><?= icon('smartphone') ?><span><b>Android-приложение</b>Задания, маршруты, защищённая съёмка без загрузки кадров из галереи.</span></article>
+          <article><?= icon('panel') ?><span><b>Онлайн-панель</b>Карта объектов, статусы, фотоотчёты, контроль сроков и аналитика.</span></article>
+          <article><?= icon('scan') ?><span><b>Автоматическая проверка</b>Система запускает анализ сразу после загрузки фотоотчёта и отмечает найденные размещения без ручного старта.</span></article>
+          <article><?= icon('server') ?><span><b>Гибкое размещение</b>On-premise на инфраструктуре заказчика или сопровождение на сервере разработчика.</span></article>
+        </div>
+        <a class="button primary custom-system-button" href="#contact" data-open-form>Обсудить проект <?= icon('arrow') ?></a>
+      </div>
+      <div class="custom-system-visual">
+        <picture>
+          <source media="(max-width: 760px)" srcset="/assets/custom-system.webp">
+          <img src="/assets/custom-system-portrait.webp" alt="Android-приложение и онлайн-панель системы контроля размещения наружной рекламы" loading="lazy" width="1152" height="1536">
+        </picture>
+      </div>
     </div>
   </section>
 
@@ -154,31 +208,52 @@ function icon(string $name, string $class = 'icon'): string
       <article class="faq-item"><button type="button" aria-expanded="false"><span>Что будет, если фото снято под углом?</span><i>+</i></button><div class="faq-answer"><p>Алгоритм проверяет геометрию совпадения и перспективу. Он рассчитан на реальные условия съёмки: наклон, шум, блики, размытие и частичное перекрытие макета.</p></div></article>
       <article class="faq-item"><button type="button" aria-expanded="false"><span>Программа различает похожие рекламные макеты?</span><i>+</i></button><div class="faq-answer"><p>Да. Совпадение проходит несколько проверок: локальные признаки, геометрия, визуальная схожесть, а в новой версии — ещё и текстовые области. Это снижает риск перепутать близкие версии креатива.</p></div></article>
       <article class="faq-item"><button type="button" aria-expanded="false"><span>Нужна ли мощная видеокарта?</span><i>+</i></button><div class="faq-answer"><p>Нет, базовый и улучшенный поиск работают на CPU. GPU — опциональное ускорение для больших потоков фото и растущих архивов.</p></div></article>
-      <article class="faq-item"><button type="button" aria-expanded="false"><span>Можно сначала проверить на наших фотографиях?</span><i>+</i></button><div class="faq-answer"><p>Да. На демонстрации можно провести пилот на вашем макете и небольшой выборке фотоотчёта, затем подобрать конфигурацию и пороги проверки.</p></div></article>
+      <article class="faq-item"><button type="button" aria-expanded="false"><span>Можно сначала проверить на наших фотографиях?</span><i>+</i></button><div class="faq-answer"><p>Да. На демонстрации можно провести демо на вашем макете и небольшой выборке фотоотчёта, затем подобрать конфигурацию и пороги проверки.</p></div></article>
     </div>
   </section>
 
   <section class="contact-section" id="contact">
-    <div class="contact-shell cta-only">
+    <div class="contact-shell">
       <div class="contact-copy"><span class="kicker light">Покажите один макет</span><h2>А мы покажем, сколько часов он вернёт вашей команде</h2><p>Проведём демонстрацию CLIP Search на примере вашего фотоотчёта и предложим подходящую конфигурацию.</p><div class="contact-meta"><a href="tel:+74996776883"><?= icon('phone') ?> +7 (499) 677-68-83</a><a href="mailto:info@voidmedia.ru"><?= icon('mail') ?> info@voidmedia.ru</a></div></div>
-      <button class="contact-button" type="button" data-open-form>Запросить демонстрацию <?= icon('arrow') ?></button>
+      <div class="form-card contact-form-card" data-lead-scope>
+        <div class="success-state<?= $submitted ? '' : ' is-hidden' ?>" data-success-state><span><?= icon('check') ?></span><h3>Заявка принята</h3><p>Спасибо! Мы свяжемся с вами, чтобы уточнить задачу и согласовать демонстрацию.</p><button type="button" data-send-another>Отправить ещё одну</button></div>
+        <form action="/submit.php" method="post" data-lead-form<?= $submitted ? ' class="is-hidden"' : '' ?> aria-labelledby="contact-form-title">
+          <div class="form-heading"><span id="contact-form-title">Заявка на демонстрацию</span><b>Ответим в рабочее время</b></div>
+          <div class="form-grid">
+            <label><span>Имя</span><input required name="name" autocomplete="name" placeholder="Как к вам обращаться"></label>
+            <label><span>Телефон</span><input required name="phone" type="tel" autocomplete="tel" placeholder="+7 (___) ___-__-__"></label>
+            <label><span>Почта</span><input required name="email" type="email" autocomplete="email" placeholder="name@company.ru"></label>
+            <label><span>Компания</span><input required name="company" autocomplete="organization" placeholder="Название агентства"></label>
+          </div>
+          <input class="honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <?php if ($turnstileConfigured): ?>
+          <div class="turnstile-field" data-turnstile-widget data-sitekey="<?= htmlspecialchars($turnstileSiteKey, ENT_QUOTES, 'UTF-8') ?>" aria-label="Проверка защиты от автоматических отправок"></div>
+          <?php else: ?>
+          <p class="turnstile-config-error">Форма временно недоступна. Позвоните нам или напишите на почту.</p>
+          <?php endif; ?>
+          <label class="consent-check"><input required type="checkbox" name="consent" value="1"><span>Я согласен на <a href="/docs/personal-data-consent.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Согласие на обработку персональных данных">обработку персональных данных</a> и ознакомлен с <a href="/docs/privacy-policy.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Политика конфиденциальности">политикой конфиденциальности</a>.</span></label>
+          <p class="form-error<?= $initialError === '' ? ' is-hidden' : '' ?>" data-form-error role="alert"><?= htmlspecialchars($initialError, ENT_QUOTES, 'UTF-8') ?></p>
+          <button class="submit-button" type="submit" disabled>Получить демонстрацию <?= icon('arrow') ?></button>
+        </form>
+      </div>
     </div>
   </section>
 
   <footer>
-    <div class="footer-top"><img src="/assets/logo.png" alt="CLIP Search"><p>Автоматизация проверки размещения рекламных макетов на фотоотчётах.</p><a href="#top">Наверх ↑</a></div>
-    <div class="footer-bottom"><span>© 2026 CLIP Search / VOID MEDIA</span><div><button type="button" data-legal="policy">Политика конфиденциальности</button><button type="button" data-legal="consent">Согласие</button><button type="button" data-legal="details">Реквизиты</button></div></div>
+    <div class="footer-top"><img src="/assets/logo.png" alt="CLIP Search"><p>Автоматизация проверки размещения наружной рекламы</p><a href="#top">Наверх ↑</a></div>
+    <div class="footer-bottom"><span>© 2025–<?= date('Y') ?> CLIP Search × VOID MEDIA</span><div><a href="/docs/privacy-policy.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Политика конфиденциальности">Политика конфиденциальности</a><a href="/docs/personal-data-consent.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Согласие на обработку персональных данных">Согласие</a><a href="/docs/company-details.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Реквизиты">Реквизиты</a></div></div>
+    <div class="footer-disclaimer"><p>Информация на сайте предназначена исключительно для юридических лиц и индивидуальных предпринимателей, приобретающих услуги в целях осуществления предпринимательской или профессиональной деятельности. Услуги физическим лицам для личных, семейных, домашних и иных нужд, не связанных с предпринимательской деятельностью, не оказываются.</p><p>Информация, размещённая на сайте, носит информационный характер и не является публичной офертой в соответствии со статьёй 437 ГК РФ. Условия оказания услуг определяются индивидуально и фиксируются в договоре.</p></div>
   </footer>
 </main>
 
-<div class="modal lead-modal" id="lead-modal"<?= $submitted || $initialError !== '' ? '' : ' hidden' ?> role="dialog" aria-modal="true" aria-labelledby="lead-modal-title">
+<div class="modal lead-modal" id="lead-modal" hidden role="dialog" aria-modal="true" aria-labelledby="lead-modal-title">
   <button class="modal-backdrop" type="button" data-lead-close aria-label="Закрыть"></button>
   <div class="modal-panel lead-panel" role="document">
     <button class="modal-close" type="button" data-lead-close aria-label="Закрыть">×</button>
-    <div class="form-card">
-      <div class="success-state<?= $submitted ? '' : ' is-hidden' ?>" id="success-state"><span><?= icon('check') ?></span><h3>Заявка принята</h3><p>Спасибо! Мы свяжемся с вами, чтобы уточнить задачу и согласовать демонстрацию.</p><button type="button" id="send-another">Отправить ещё одну</button></div>
-      <form id="lead-form" action="/submit.php" method="post"<?= $submitted ? ' class="is-hidden"' : '' ?>>
-        <div class="form-heading"><span id="lead-modal-title">Заявка на демонстрацию</span><b>Ответим в рабочее время</b></div>
+    <div class="form-card" data-lead-scope>
+      <div class="success-state<?= $submitted ? '' : ' is-hidden' ?>" data-success-state><span><?= icon('check') ?></span><h3>Заявка принята</h3><p>Спасибо! Мы свяжемся с вами, чтобы уточнить задачу и согласовать демонстрацию.</p><button type="button" data-send-another>Отправить ещё одну</button></div>
+      <form id="lead-form" action="/submit.php" method="post" data-lead-form<?= $submitted ? ' class="is-hidden"' : '' ?>>
+        <div class="form-heading"><span id="lead-modal-title">Оставить заявку</span><b>Ответим в рабочее время</b></div>
         <div class="form-grid">
           <label><span>Имя</span><input required name="name" autocomplete="name" placeholder="Как к вам обращаться"></label>
           <label><span>Телефон</span><input required name="phone" type="tel" autocomplete="tel" placeholder="+7 (___) ___-__-__"></label>
@@ -186,26 +261,33 @@ function icon(string $name, string $class = 'icon'): string
           <label><span>Компания</span><input required name="company" autocomplete="organization" placeholder="Название агентства"></label>
         </div>
         <input class="honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <label class="consent-check"><input required type="checkbox" name="consent" value="1"><span>Я согласен на <button type="button" data-legal="consent">обработку персональных данных</button> и ознакомлен с <button type="button" data-legal="policy">политикой конфиденциальности</button>.</span></label>
-        <p class="form-error<?= $initialError === '' ? ' is-hidden' : '' ?>" id="form-error" role="alert"><?= htmlspecialchars($initialError, ENT_QUOTES, 'UTF-8') ?></p>
-        <button class="submit-button" type="submit">Получить демонстрацию <?= icon('arrow') ?></button>
+        <?php if ($turnstileConfigured): ?>
+        <div class="turnstile-field" data-turnstile-widget data-sitekey="<?= htmlspecialchars($turnstileSiteKey, ENT_QUOTES, 'UTF-8') ?>" aria-label="Проверка защиты от автоматических отправок"></div>
+        <?php else: ?>
+        <p class="turnstile-config-error">Форма временно недоступна. Позвоните нам или напишите на почту.</p>
+        <?php endif; ?>
+        <label class="consent-check"><input required type="checkbox" name="consent" value="1"><span>Я согласен на <a href="/docs/personal-data-consent.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Согласие на обработку персональных данных">обработку персональных данных</a> и ознакомлен с <a href="/docs/privacy-policy.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Политика конфиденциальности">политикой конфиденциальности</a>.</span></label>
+        <p class="form-error<?= $initialError === '' ? ' is-hidden' : '' ?>" data-form-error role="alert"><?= htmlspecialchars($initialError, ENT_QUOTES, 'UTF-8') ?></p>
+        <button class="submit-button" type="submit" disabled>Получить демонстрацию <?= icon('arrow') ?></button>
+        <div class="form-disclaimer"><p>Информация на сайте предназначена исключительно для юридических лиц и индивидуальных предпринимателей, приобретающих услуги в целях осуществления предпринимательской или профессиональной деятельности. Услуги физическим лицам для личных, семейных, домашних и иных нужд, не связанных с предпринимательской деятельностью, не оказываются.</p><p>Информация, размещённая на сайте, носит информационный характер и не является публичной офертой в соответствии со статьёй 437 ГК РФ. Условия оказания услуг определяются индивидуально и фиксируются в договоре.</p></div>
       </form>
     </div>
   </div>
 </div>
 
-<div class="modal" id="legal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
-  <button class="modal-backdrop" type="button" data-modal-close aria-label="Закрыть"></button>
-  <div class="modal-panel" role="document">
-    <button class="modal-close" type="button" data-modal-close aria-label="Закрыть">×</button>
-    <div class="modal-header"><h3 id="modal-title"></h3><p>Документы сайта CLIP Search</p></div>
-    <div class="legal-copy" id="modal-copy"></div>
+<div class="modal pdf-modal" id="pdf-modal" hidden role="dialog" aria-modal="true" aria-labelledby="pdf-modal-title">
+  <button class="modal-backdrop" type="button" data-pdf-close aria-label="Закрыть документ"></button>
+  <div class="modal-panel pdf-panel" role="document">
+    <div class="pdf-modal-header">
+      <h3 id="pdf-modal-title">Документ</h3>
+      <a href="#" target="_blank" rel="noopener" id="pdf-open-link">Открыть в новой вкладке <?= icon('arrow') ?></a>
+      <button class="modal-close" type="button" data-pdf-close aria-label="Закрыть">×</button>
+    </div>
+    <iframe id="pdf-frame" title="Просмотр документа PDF" src="about:blank"></iframe>
   </div>
 </div>
 
-<template id="legal-policy"><h4>1. Общие положения</h4><p>Настоящая политика описывает порядок обработки данных посетителей сайта CLIP Search. Оператор использует сведения только для ответа на заявки, подготовки демонстрации и исполнения договорных обязательств.</p><h4>2. Какие данные обрабатываются</h4><p>Имя, номер телефона, адрес электронной почты, название компании, а также технические сведения, автоматически передаваемые браузером.</p><h4>3. Цели и срок обработки</h4><p>Данные используются для обратной связи, консультации, подготовки предложения и улучшения работы сайта. Сведения хранятся не дольше, чем это требуется для указанных целей или установлено законом.</p><h4>4. Права пользователя</h4><p>Пользователь может запросить уточнение, блокирование или удаление своих данных, направив обращение по адресу info@voidmedia.ru.</p></template>
-<template id="legal-consent"><p>Отправляя форму, я свободно, своей волей и в своём интересе даю согласие оператору CLIP Search / VOID MEDIA на обработку указанных мною персональных данных: имени, телефона, электронной почты и названия компании.</p><p>Разрешённые действия: сбор, запись, систематизация, хранение, уточнение, использование и удаление данных с применением средств автоматизации или без них.</p><p>Цель обработки — обратная связь по заявке, проведение демонстрации, подготовка коммерческого предложения и заключение договора. Согласие действует до достижения целей обработки и может быть отозвано письмом на info@voidmedia.ru.</p></template>
-<template id="legal-details"><h4>Правообладатель и разработчик</h4><p><b>VOID MEDIA</b><br>Программный продукт: CLIP Search</p><p><?= icon('phone') ?> +7 (499) 677-68-83<br><?= icon('mail') ?> info@voidmedia.ru<br><?= icon('map') ?> Москва, ул. Люблинская, 141</p><p>Юридические и банковские реквизиты указываются в договоре и предоставляются по запросу перед оплатой.</p></template>
-<script src="/assets/main.js" defer></script>
+<script src="/assets/main.js?v=20260901-2" defer></script>
+<?php if ($turnstileConfigured): ?><script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=clipsearchTurnstileReady" defer></script><?php endif; ?>
 </body>
 </html>

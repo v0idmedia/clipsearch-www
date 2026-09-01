@@ -24,6 +24,55 @@ function respond(bool $ok, string $message, int $status, bool $json): void
     exit;
 }
 
+function requestHostIsLocal(): bool
+{
+    $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+    $host = (string)preg_replace('/:\d+$/', '', $host);
+    return in_array($host, ['localhost', '127.0.0.1', '[::1]', '::1'], true);
+}
+
+function validateTurnstile(string $token, string $secret, string $remoteIp): bool
+{
+    if ($token === '' || strlen($token) > 2048) {
+        return false;
+    }
+
+    $payload = [
+        'secret' => $secret,
+        'response' => $token,
+    ];
+    if ($remoteIp !== '' && filter_var($remoteIp, FILTER_VALIDATE_IP)) {
+        $payload['remoteip'] = $remoteIp;
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/x-www-form-urlencoded\r\nAccept: application/json\r\n",
+            'content' => http_build_query($payload, '', '&'),
+            'timeout' => 8,
+            'ignore_errors' => true,
+        ],
+    ]);
+
+    $response = @file_get_contents('https://challenges.cloudflare.com/turnstile/v0/siteverify', false, $context);
+    if ($response === false) {
+        error_log('CLIP Search: Turnstile Siteverify is unavailable.');
+        return false;
+    }
+
+    $result = json_decode($response, true);
+    if (!is_array($result) || empty($result['success'])) {
+        $errorCodes = is_array($result) && isset($result['error-codes']) && is_array($result['error-codes'])
+            ? implode(', ', $result['error-codes'])
+            : 'invalid-response';
+        error_log('CLIP Search: Turnstile validation failed: ' . $errorCodes);
+        return false;
+    }
+
+    return true;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(false, 'Метод не поддерживается.', 405, $wantsJson);
 }
@@ -53,6 +102,21 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 $phoneDigits = preg_replace('/\D+/', '', $phone);
 if (strlen($phoneDigits) < 7) {
     respond(false, 'Проверьте номер телефона.', 422, $wantsJson);
+}
+
+$turnstileSecret = trim((string)(getenv('TURNSTILE_SECRET_KEY') ?: ''));
+if ($turnstileSecret === '' && requestHostIsLocal()) {
+    $turnstileSecret = '1x0000000000000000000000000000000AA';
+}
+if ($turnstileSecret === '') {
+    error_log('CLIP Search: TURNSTILE_SECRET_KEY is not configured.');
+    respond(false, 'Форма временно недоступна. Позвоните нам или попробуйте позже.', 503, $wantsJson);
+}
+
+$turnstileToken = trim((string)($_POST['cf-turnstile-response'] ?? ''));
+$remoteIp = trim((string)($_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? ''));
+if (!validateTurnstile($turnstileToken, $turnstileSecret, $remoteIp)) {
+    respond(false, 'Не удалось подтвердить, что форму отправляет человек. Обновите проверку и попробуйте ещё раз.', 422, $wantsJson);
 }
 
 $record = [
