@@ -32,6 +32,8 @@
 
 - `public/index.php` — лендинг;
 - `public/submit.php` — обработчик формы;
+- `public/includes/cookie-consent-head.php` — код уведомления для секции `<head>`;
+- `public/includes/cookie-consent-body.php` — разметка и логика уведомления для конца `<body>`;
 - `public/assets/` — стили, JavaScript, шрифт и изображения;
 - `Dockerfile`, `docker-compose.yml` — запуск в Docker/Portainer;
 - `start-local.bat` — локальный запуск Windows.

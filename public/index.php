@@ -80,6 +80,7 @@ function icon(string $name, string $class = 'icon'): string
   <link rel="preload" href="/assets/fonts/mulish-variable.ttf" as="font" type="font/ttf" crossorigin>
   <?php if ($turnstileConfigured): ?><link rel="preconnect" href="https://challenges.cloudflare.com"><?php endif; ?>
   <link rel="stylesheet" href="/assets/style.css?v=20260901-3">
+  <?php require __DIR__ . '/includes/cookie-consent-head.php'; ?>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CLIP Search","applicationCategory":"BusinessApplication","operatingSystem":"Windows","description":"Программа автоматизации проверки размещения рекламных макетов на фотографиях стендов.","url":"https://clipsearch.ru/","image":"https://clipsearch.ru/og.png","provider":{"@type":"Organization","name":"VOID MEDIA","url":"https://voidmedia.ru/","telephone":"+7-499-677-68-83"},"offers":{"@type":"Offer","priceCurrency":"RUB","price":"49990","description":"Профессиональная лицензия до 5 пользователей за 49 990 рублей в год"}}</script>
 </head>
 <body>
@@ -242,7 +243,7 @@ function icon(string $name, string $class = 'icon'): string
 
   <footer>
     <div class="footer-top"><img src="/assets/logo.png" alt="CLIP Search"><p>Автоматизация проверки размещения наружной рекламы</p><a href="#top">Наверх ↑</a></div>
-    <div class="footer-bottom"><span>© 2025–<?= date('Y') ?> CLIP Search × VOID MEDIA</span><div><a href="/docs/privacy-policy.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Политика конфиденциальности">Политика конфиденциальности</a><a href="/docs/personal-data-consent.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Согласие на обработку персональных данных">Согласие</a><a href="/docs/company-details.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Реквизиты">Реквизиты</a></div></div>
+    <div class="footer-bottom"><span>© 2025–<?= date('Y') ?> CLIP Search × VOID MEDIA</span><div><a href="/docs/privacy-policy.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Политика конфиденциальности">Политика конфиденциальности</a><a href="/docs/personal-data-consent.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Согласие на обработку персональных данных">Согласие</a><a href="/docs/company-details.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Реквизиты">Реквизиты</a><button class="cookie-settings-button" type="button" data-cookie-settings>Настройки cookies</button></div></div>
     <div class="footer-disclaimer"><p>Информация на сайте предназначена исключительно для юридических лиц и индивидуальных предпринимателей, приобретающих услуги в целях осуществления предпринимательской или профессиональной деятельности. Услуги физическим лицам для личных, семейных, домашних и иных нужд, не связанных с предпринимательской деятельностью, не оказываются.</p><p>Информация, размещённая на сайте, носит информационный характер и не является публичной офертой в соответствии со статьёй 437 ГК РФ. Условия оказания услуг определяются индивидуально и фиксируются в договоре.</p></div>
   </footer>
 </main>
@@ -289,6 +290,7 @@ function icon(string $name, string $class = 'icon'): string
   </div>
 </div>
 
+<?php require __DIR__ . '/includes/cookie-consent-body.php'; ?>
 <script src="/assets/main.js?v=20260901-3" defer></script>
 <?php if ($turnstileConfigured): ?><script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=clipsearchTurnstileReady" defer></script><?php endif; ?>
 </body>
