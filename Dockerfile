@@ -8,8 +8,5 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
     && a2enmod headers expires rewrite
 
 COPY public/ /var/www/html/public/
-COPY storage/ /var/www/html/storage/
-
-RUN chown -R www-data:www-data /var/www/html/storage
 
 EXPOSE 80

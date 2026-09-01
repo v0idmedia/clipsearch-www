@@ -79,7 +79,7 @@ function icon(string $name, string $class = 'icon'): string
   <meta name="twitter:image" content="https://clipsearch.ru/og.png">
   <link rel="preload" href="/assets/fonts/mulish-variable.ttf" as="font" type="font/ttf" crossorigin>
   <?php if ($turnstileConfigured): ?><link rel="preconnect" href="https://challenges.cloudflare.com"><?php endif; ?>
-  <link rel="stylesheet" href="/assets/style.css?v=20260901">
+  <link rel="stylesheet" href="/assets/style.css?v=20260901-3">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CLIP Search","applicationCategory":"BusinessApplication","operatingSystem":"Windows","description":"Программа автоматизации проверки размещения рекламных макетов на фотографиях стендов.","url":"https://clipsearch.ru/","image":"https://clipsearch.ru/og.png","provider":{"@type":"Organization","name":"VOID MEDIA","url":"https://voidmedia.ru/","telephone":"+7-499-677-68-83"},"offers":{"@type":"Offer","priceCurrency":"RUB","price":"49990","description":"Профессиональная лицензия до 5 пользователей за 49 990 рублей в год"}}</script>
 </head>
 <body>
@@ -87,7 +87,7 @@ function icon(string $name, string $class = 'icon'): string
   <header class="site-header">
     <a href="#top" class="brand" aria-label="CLIP Search — на главную"><img src="/assets/logo.png" alt="CLIP Search"></a>
     <nav aria-label="Основная навигация"><a href="#how">Как работает</a><a href="#features">Возможности</a><a href="#pricing">Тарифы</a></nav>
-    <a class="header-cta" href="#contact" data-open-form>Получить демо</a>
+    <a class="header-cta" href="#contact" data-open-form data-form-source="Шапка — Получить демо">Получить демо</a>
   </header>
 
   <section class="hero" id="top">
@@ -95,7 +95,7 @@ function icon(string $name, string $class = 'icon'): string
       <div class="eyebrow"><?= icon('sparkle') ?> Machine Vision + AI</div>
       <h1>Фотоотчёты проверяются <em>сами</em></h1>
       <p class="hero-lead">CLIP Search находит рекламный макет на сотнях фотографий стендов и сокращает ручную проверку на 80–95%.</p>
-      <div class="hero-actions"><a class="button primary" href="#contact" data-open-form>Запросить демонстрацию <?= icon('arrow') ?></a><a class="button ghost" href="#how">Как это работает</a></div>
+      <div class="hero-actions"><a class="button primary" href="#contact" data-open-form data-form-source="Первый экран — Запросить демонстрацию">Запросить демонстрацию <?= icon('arrow') ?></a><a class="button ghost" href="#how">Как это работает</a></div>
       <ul class="hero-points"><li><?= icon('check') ?> 100+ фото за минуту</li><li><?= icon('check') ?> XLSX-отчёт без ручной сверки</li></ul>
     </div>
 
@@ -171,9 +171,9 @@ function icon(string $name, string $class = 'icon'): string
   <section class="section pricing-section" id="pricing">
     <div class="section-heading narrow"><span class="kicker">Варианты запуска</span><h2>Начните с демо — масштабируйте после результата</h2><p>Предварительная модель стоимости для продаж. Финальная лицензия зависит от числа рабочих мест, объёма фото и требуемых модулей.</p></div>
     <div class="pricing-grid">
-      <article class="price-card"><span class="price-name">Демо</span><h3>Бесплатно</h3><p>Проверим ваш макет на тестовой выборке и покажем итоговый отчёт.</p><ul><li><?= icon('check') ?> 1 рекламный макет</li><li><?= icon('check') ?> До 100 фото</li><li><?= icon('check') ?> Демонстрация результата</li></ul><a href="#contact" data-open-form class="price-button">Запросить демо <?= icon('arrow') ?></a></article>
-      <article class="price-card featured"><span class="popular">Популярный</span><span class="price-name">Профессиональный</span><h3>49 990 ₽<small>/год</small></h3><p>Для регулярной проверки фотоотчётов одной команды.</p><ul><li><?= icon('check') ?> До 5 пользователей</li><li><?= icon('check') ?> Неограниченные папки</li><li><?= icon('check') ?> XLSX и разметка кадров</li><li><?= icon('check') ?> Устойчивый поиск и ROI</li><li><?= icon('check') ?> Обновления и поддержка</li></ul><a href="#contact" data-open-form class="price-button">Получить предложение <?= icon('arrow') ?></a></article>
-      <article class="price-card"><span class="price-name">Корпоративный</span><h3>По запросу</h3><p>Для больших потоков, нескольких команд и индивидуального контура.</p><ul><li><?= icon('check') ?> Несколько рабочих мест</li><li><?= icon('check') ?> GPU-ускорение</li><li><?= icon('check') ?> Текстовая валидация</li><li><?= icon('check') ?> Настройка под ваши данные</li></ul><a href="#contact" data-open-form class="price-button">Обсудить задачу <?= icon('arrow') ?></a></article>
+      <article class="price-card"><span class="price-name">Демо</span><h3>Бесплатно</h3><p>Проверим ваш макет на тестовой выборке и покажем итоговый отчёт.</p><ul><li><?= icon('check') ?> 1 рекламный макет</li><li><?= icon('check') ?> До 100 фото</li><li><?= icon('check') ?> Демонстрация результата</li></ul><a href="#contact" data-open-form data-form-source="Тариф «Демо» — Запросить демо" class="price-button">Запросить демо <?= icon('arrow') ?></a></article>
+      <article class="price-card featured"><span class="popular">Популярный</span><span class="price-name">Профессиональный</span><h3>49 990 ₽<small>/год</small></h3><p>Для регулярной проверки фотоотчётов одной команды.</p><ul><li><?= icon('check') ?> До 5 пользователей</li><li><?= icon('check') ?> Неограниченные папки</li><li><?= icon('check') ?> XLSX и разметка кадров</li><li><?= icon('check') ?> Устойчивый поиск и ROI</li><li><?= icon('check') ?> Обновления и поддержка</li></ul><a href="#contact" data-open-form data-form-source="Тариф «Профессиональный» — Получить предложение" class="price-button">Получить предложение <?= icon('arrow') ?></a></article>
+      <article class="price-card"><span class="price-name">Корпоративный</span><h3>По запросу</h3><p>Для больших потоков, нескольких команд и индивидуального контура.</p><ul><li><?= icon('check') ?> Несколько рабочих мест</li><li><?= icon('check') ?> GPU-ускорение</li><li><?= icon('check') ?> Текстовая валидация</li><li><?= icon('check') ?> Настройка под ваши данные</li></ul><a href="#contact" data-open-form data-form-source="Тариф «Корпоративный» — Обсудить задачу" class="price-button">Обсудить задачу <?= icon('arrow') ?></a></article>
     </div>
     <p class="pricing-disclaimer">Работаем исключительно с юридическими лицами и ИП. Указанные цены и условия носят информационный характер и не являются публичной офертой.</p>
   </section>
@@ -190,7 +190,7 @@ function icon(string $name, string $class = 'icon'): string
           <article><?= icon('scan') ?><span><b>Автоматическая проверка</b>Система запускает анализ сразу после загрузки фотоотчёта и отмечает найденные размещения без ручного старта.</span></article>
           <article><?= icon('server') ?><span><b>Гибкое размещение</b>On-premise на инфраструктуре заказчика или сопровождение на сервере разработчика.</span></article>
         </div>
-        <a class="button primary custom-system-button" href="#contact" data-open-form>Обсудить проект <?= icon('arrow') ?></a>
+        <a class="button primary custom-system-button" href="#contact" data-open-form data-form-source="Индивидуальная разработка — Обсудить проект">Обсудить проект <?= icon('arrow') ?></a>
       </div>
       <div class="custom-system-visual">
         <picture>
@@ -218,6 +218,7 @@ function icon(string $name, string $class = 'icon'): string
       <div class="form-card contact-form-card" data-lead-scope>
         <div class="success-state<?= $submitted ? '' : ' is-hidden' ?>" data-success-state><span><?= icon('check') ?></span><h3>Заявка принята</h3><p>Спасибо! Мы свяжемся с вами, чтобы уточнить задачу и согласовать демонстрацию.</p><button type="button" data-send-another>Отправить ещё одну</button></div>
         <form action="/submit.php" method="post" data-lead-form<?= $submitted ? ' class="is-hidden"' : '' ?> aria-labelledby="contact-form-title">
+          <input type="hidden" name="source" value="Нижний блок — открытая форма">
           <div class="form-heading"><span id="contact-form-title">Заявка на демонстрацию</span><b>Ответим в рабочее время</b></div>
           <div class="form-grid">
             <label><span>Имя</span><input required name="name" autocomplete="name" placeholder="Как к вам обращаться"></label>
@@ -253,6 +254,7 @@ function icon(string $name, string $class = 'icon'): string
     <div class="form-card" data-lead-scope>
       <div class="success-state<?= $submitted ? '' : ' is-hidden' ?>" data-success-state><span><?= icon('check') ?></span><h3>Заявка принята</h3><p>Спасибо! Мы свяжемся с вами, чтобы уточнить задачу и согласовать демонстрацию.</p><button type="button" data-send-another>Отправить ещё одну</button></div>
       <form id="lead-form" action="/submit.php" method="post" data-lead-form<?= $submitted ? ' class="is-hidden"' : '' ?>>
+        <input type="hidden" name="source" value="Всплывающая форма">
         <div class="form-heading"><span id="lead-modal-title">Оставить заявку</span><b>Ответим в рабочее время</b></div>
         <div class="form-grid">
           <label><span>Имя</span><input required name="name" autocomplete="name" placeholder="Как к вам обращаться"></label>
@@ -287,7 +289,7 @@ function icon(string $name, string $class = 'icon'): string
   </div>
 </div>
 
-<script src="/assets/main.js?v=20260901-2" defer></script>
+<script src="/assets/main.js?v=20260901-3" defer></script>
 <?php if ($turnstileConfigured): ?><script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=clipsearchTurnstileReady" defer></script><?php endif; ?>
 </body>
 </html>

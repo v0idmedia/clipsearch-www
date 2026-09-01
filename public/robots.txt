@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /submit.php
+Disallow: /docs/
+
+Host: clipsearch.ru
+Sitemap: https://clipsearch.ru/sitemap.xml

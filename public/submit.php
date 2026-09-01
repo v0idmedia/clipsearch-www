@@ -73,6 +73,49 @@ function validateTurnstile(string $token, string $secret, string $remoteIp): boo
     return true;
 }
 
+function telegramHtml(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function sendTelegramMessage(string $botToken, string $chatId, string $text): bool
+{
+    $payload = [
+        'chat_id' => $chatId,
+        'text' => $text,
+        'parse_mode' => 'HTML',
+        'link_preview_options' => json_encode(['is_disabled' => true]),
+    ];
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/x-www-form-urlencoded\r\nAccept: application/json\r\n",
+            'content' => http_build_query($payload, '', '&'),
+            'timeout' => 10,
+            'ignore_errors' => true,
+        ],
+    ]);
+
+    $endpoint = 'https://api.telegram.org/bot' . $botToken . '/sendMessage';
+    $response = @file_get_contents($endpoint, false, $context);
+    if ($response === false) {
+        error_log('CLIP Search: Telegram Bot API is unavailable.');
+        return false;
+    }
+
+    $result = json_decode($response, true);
+    if (!is_array($result) || empty($result['ok'])) {
+        $description = is_array($result) && isset($result['description'])
+            ? (string)$result['description']
+            : 'invalid-response';
+        error_log('CLIP Search: Telegram sendMessage failed: ' . $description);
+        return false;
+    }
+
+    return true;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(false, 'Метод не поддерживается.', 405, $wantsJson);
 }
@@ -85,6 +128,7 @@ $name = trim((string)($_POST['name'] ?? ''));
 $phone = trim((string)($_POST['phone'] ?? ''));
 $email = trim((string)($_POST['email'] ?? ''));
 $company = trim((string)($_POST['company'] ?? ''));
+$source = trim((string)($_POST['source'] ?? ''));
 $consent = (string)($_POST['consent'] ?? '') === '1';
 
 if ($name === '' || $phone === '' || $email === '' || $company === '' || !$consent) {
@@ -93,6 +137,14 @@ if ($name === '' || $phone === '' || $email === '' || $company === '' || !$conse
 
 if (strlen($name) > 120 || strlen($phone) > 60 || strlen($email) > 190 || strlen($company) > 190) {
     respond(false, 'Одно из полей заполнено слишком длинным текстом.', 422, $wantsJson);
+}
+
+$source = (string)preg_replace('/\s+/u', ' ', $source);
+if ($source === '') {
+    $source = 'Источник не определён';
+}
+if (strlen($source) > 240) {
+    respond(false, 'Некорректный источник заявки.', 422, $wantsJson);
 }
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -119,35 +171,28 @@ if (!validateTurnstile($turnstileToken, $turnstileSecret, $remoteIp)) {
     respond(false, 'Не удалось подтвердить, что форму отправляет человек. Обновите проверку и попробуйте ещё раз.', 422, $wantsJson);
 }
 
-$record = [
-    'created_at' => gmdate('c'),
-    'name' => $name,
-    'phone' => $phone,
-    'email' => $email,
-    'company' => $company,
-    'consent' => true,
-    'ip' => (string)($_SERVER['REMOTE_ADDR'] ?? ''),
-    'user_agent' => substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 500),
-];
-
-$storageDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage';
-if (!is_dir($storageDir) && !mkdir($storageDir, 0775, true) && !is_dir($storageDir)) {
-    respond(false, 'Сервис заявок временно недоступен.', 500, $wantsJson);
+$botToken = trim((string)(getenv('TELEGRAM_BOT_TOKEN') ?: ''));
+$chatId = trim((string)(getenv('TELEGRAM_CHAT_ID') ?: ''));
+if ($botToken === '' || $chatId === '') {
+    error_log('CLIP Search: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not configured.');
+    respond(false, 'Сервис заявок временно недоступен. Позвоните нам или попробуйте позже.', 503, $wantsJson);
+}
+if (!preg_match('/^\d+:[A-Za-z0-9_-]+$/', $botToken) || strlen($chatId) > 100 || preg_match('/[\r\n]/', $chatId)) {
+    error_log('CLIP Search: invalid Telegram configuration.');
+    respond(false, 'Сервис заявок временно недоступен. Позвоните нам или попробуйте позже.', 503, $wantsJson);
 }
 
-$line = json_encode($record, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
-$saved = file_put_contents($storageDir . DIRECTORY_SEPARATOR . 'leads.jsonl', $line, FILE_APPEND | LOCK_EX);
-if ($saved === false) {
-    respond(false, 'Не удалось сохранить заявку. Позвоните нам или попробуйте позже.', 500, $wantsJson);
-}
+$submittedAt = new DateTimeImmutable('now', new DateTimeZone('Europe/Moscow'));
+$message = "📩 <b>Новая заявка CLIP Search</b>\n\n"
+    . '<b>Имя:</b> ' . telegramHtml($name) . "\n"
+    . '<b>Телефон:</b> ' . telegramHtml($phone) . "\n"
+    . '<b>Почта:</b> ' . telegramHtml($email) . "\n"
+    . '<b>Компания:</b> ' . telegramHtml($company) . "\n"
+    . '<b>Источник:</b> ' . telegramHtml($source) . "\n"
+    . '<b>Время:</b> ' . $submittedAt->format('d.m.Y H:i:s') . ' МСК';
 
-$leadEmail = getenv('LEAD_EMAIL');
-if (is_string($leadEmail) && filter_var($leadEmail, FILTER_VALIDATE_EMAIL)) {
-    $safeName = str_replace(["\r", "\n"], ' ', $name);
-    $subject = 'Новая заявка CLIP Search — ' . $safeName;
-    $body = "Имя: {$name}\nТелефон: {$phone}\nПочта: {$email}\nКомпания: {$company}\n";
-    $headers = 'Content-Type: text/plain; charset=UTF-8' . "\r\n" . 'Reply-To: ' . str_replace(["\r", "\n"], '', $email);
-    @mail($leadEmail, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers);
+if (!sendTelegramMessage($botToken, $chatId, $message)) {
+    respond(false, 'Не удалось отправить заявку. Позвоните нам или попробуйте позже.', 502, $wantsJson);
 }
 
 respond(true, 'Заявка принята.', 200, $wantsJson);

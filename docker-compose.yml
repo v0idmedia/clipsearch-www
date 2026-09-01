@@ -8,11 +8,7 @@ services:
     ports:
       - "8080:80"
     environment:
-      LEAD_EMAIL: ""
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
+      TELEGRAM_CHAT_ID: "${TELEGRAM_CHAT_ID:-}"
       TURNSTILE_SITE_KEY: "${TURNSTILE_SITE_KEY:-}"
       TURNSTILE_SECRET_KEY: "${TURNSTILE_SECRET_KEY:-}"
-    volumes:
-      - clipsearch-data:/var/www/html/storage
-
-volumes:
-  clipsearch-data:

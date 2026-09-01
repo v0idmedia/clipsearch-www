@@ -361,6 +361,7 @@ footer { padding: 45px max(20px, calc((100vw - 1180px) / 2)) 28px; background: #
 
 @media (max-width: 760px) {
   .section { width: min(100% - 28px, 1180px); padding: 70px 0; }
+  .how-section { width: calc(100% - 28px); padding: 70px 18px; border-radius: 28px; }
   .section h2, .contact-copy h2 { font-size: 38px; }
   .compare-grid, .steps-grid, .app-showcase, .features-grid { grid-template-columns: 1fr; }
   .compare-card { min-height: 330px; padding: 30px; }
@@ -391,6 +392,7 @@ footer { padding: 45px max(20px, calc((100vw - 1180px) / 2)) 28px; background: #
 }
 
 @media (max-width: 480px) {
+  .how-section { width: calc(100% - 16px); padding: 60px 14px; border-radius: 24px; }
   .section-heading p { font-size: 16px; }
   .creative-row { gap: 7px; padding: 12px; }
   .creative { padding: 4px; }

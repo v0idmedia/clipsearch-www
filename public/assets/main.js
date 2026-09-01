@@ -182,10 +182,15 @@
 
   function openLeadModal(trigger) {
     leadLastFocus = trigger || document.activeElement;
+    var sourceInput = leadModal.querySelector('input[name="source"]');
+    if (sourceInput && trigger) {
+      var source = trigger.getAttribute('data-form-source') || trigger.textContent || 'Всплывающая форма';
+      sourceInput.value = source.replace(/\s+/g, ' ').trim();
+    }
     leadModal.hidden = false;
     document.body.classList.add('modal-open');
     renderTurnstileWidgets(leadModal);
-    var firstInput = leadModal.querySelector('input:not(.honeypot)');
+    var firstInput = leadModal.querySelector('input:not([type="hidden"]):not(.honeypot)');
     if (firstInput) window.setTimeout(function () { firstInput.focus(); }, 60);
   }
 
@@ -257,6 +262,8 @@
         if (formError) formError.classList.add('is-hidden');
         var submit = form.querySelector('[type="submit"]');
         var initialText = submit.innerHTML;
+        var sourceInput = form.querySelector('input[name="source"]');
+        var sourceValue = sourceInput ? sourceInput.value : '';
         submit.disabled = true;
         submit.textContent = 'Отправляем…';
 
@@ -273,6 +280,7 @@
           })
           .then(function () {
             form.reset();
+            if (sourceInput) sourceInput.value = sourceValue;
             resetTurnstileForForm(form);
             form.classList.add('is-hidden');
             if (success) success.classList.remove('is-hidden');
@@ -295,7 +303,7 @@
         if (success) success.classList.add('is-hidden');
         form.classList.remove('is-hidden');
         renderTurnstileWidgets(scope);
-        form.querySelector('input').focus();
+        form.querySelector('input:not([type="hidden"]):not(.honeypot)').focus();
       });
     }
   });
