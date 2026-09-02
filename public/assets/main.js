@@ -1,6 +1,50 @@
 (function () {
   'use strict';
 
+  var appConfig = window.CLIPSEARCH_CONFIG || {};
+  var metrikaId = Number(appConfig.yandexMetrikaId || 0);
+  var metrikaLoaded = false;
+
+  function loadMetrika() {
+    if (!metrikaId || metrikaLoaded) return;
+    window.ym = window.ym || function () { (window.ym.a = window.ym.a || []).push(arguments); };
+    window.ym.l = window.ym.l || Date.now();
+
+    if (!document.querySelector('script[data-clipsearch-metrika]')) {
+      var script = document.createElement('script');
+      script.async = true;
+      script.src = 'https://mc.yandex.ru/metrika/tag.js';
+      script.setAttribute('data-clipsearch-metrika', '');
+      document.head.appendChild(script);
+    }
+
+    window.ym(metrikaId, 'init', {
+      clickmap: true,
+      trackLinks: true,
+      accurateTrackBounce: true,
+      webvisor: true
+    });
+    metrikaLoaded = true;
+  }
+
+  function disableMetrika() {
+    if (!metrikaLoaded || typeof window.ym !== 'function') return;
+    window.ym(metrikaId, 'destruct');
+    metrikaLoaded = false;
+  }
+
+  function metrikaGoal(name) {
+    if (metrikaLoaded && typeof window.ym === 'function') {
+      window.ym(metrikaId, 'reachGoal', name);
+    }
+  }
+
+  if (window.CLIPSEARCH_COOKIE_CONSENT === 'all') loadMetrika();
+  window.addEventListener('clipsearch:cookie-consent', function (event) {
+    if (event.detail && event.detail.choice === 'all') loadMetrika();
+    else disableMetrika();
+  });
+
   document.documentElement.classList.add('js');
 
   function protectShortWordsInHeadings() {
@@ -138,47 +182,79 @@
   var pdfTitle = document.getElementById('pdf-modal-title');
   var pdfOpenLink = document.getElementById('pdf-open-link');
   var pdfLastFocus = null;
-  var turnstileReady = false;
+  var turnstilePromise = null;
 
-  function setTurnstileSubmitState(container, enabled) {
-    var form = container.closest('form');
-    var submit = form ? form.querySelector('[type="submit"]') : null;
-    if (submit) submit.disabled = !enabled;
+  function loadTurnstileScript() {
+    if (window.turnstile) return Promise.resolve(window.turnstile);
+    if (turnstilePromise) return turnstilePromise;
+
+    turnstilePromise = new Promise(function (resolve, reject) {
+      var script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.onload = function () {
+        if (window.turnstile) resolve(window.turnstile);
+        else reject(new Error('Turnstile unavailable'));
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+    return turnstilePromise;
   }
 
-  function renderTurnstileWidgets(root) {
-    if (!turnstileReady || !window.turnstile) return;
-    var containers = root.querySelectorAll('[data-turnstile-widget]');
-
-    Array.prototype.forEach.call(containers, function (container) {
-      if (container._turnstileWidgetId !== undefined) return;
-      var parentModal = container.closest('.modal');
-      if (parentModal && parentModal.hidden) return;
-
-      container._turnstileWidgetId = window.turnstile.render(container, {
-        sitekey: container.getAttribute('data-sitekey'),
-        theme: 'light',
-        size: 'flexible',
-        appearance: 'interaction-only',
-        action: 'lead',
-        callback: function () { setTurnstileSubmitState(container, true); },
-        'expired-callback': function () { setTurnstileSubmitState(container, false); },
-        'error-callback': function () { setTurnstileSubmitState(container, false); }
-      });
-    });
+  function clearTurnstileTimeout(form) {
+    if (form._turnstileTimeout) {
+      window.clearTimeout(form._turnstileTimeout);
+      form._turnstileTimeout = null;
+    }
   }
 
   function resetTurnstileForForm(form) {
-    var container = form.querySelector('[data-turnstile-widget]');
-    if (!container || container._turnstileWidgetId === undefined || !window.turnstile) return;
-    setTurnstileSubmitState(container, false);
-    window.turnstile.reset(container._turnstileWidgetId);
+    clearTurnstileTimeout(form);
+    form._turnstileExecutionActive = false;
+    form._turnstileToken = '';
+    if (window.turnstile && form._turnstileWidgetId !== undefined) {
+      window.turnstile.reset(form._turnstileWidgetId);
+    }
   }
 
-  window.clipsearchTurnstileReady = function () {
-    turnstileReady = true;
-    renderTurnstileWidgets(document);
-  };
+  function ensureTurnstile(form) {
+    var container = form.querySelector('[data-turnstile-widget]');
+    if (!container || !appConfig.turnstileSiteKey) return Promise.resolve(null);
+
+    return loadTurnstileScript().then(function (api) {
+      if (form._turnstileWidgetId === undefined) {
+        form._turnstileWidgetId = api.render(container, {
+          sitekey: container.getAttribute('data-sitekey') || appConfig.turnstileSiteKey,
+          action: appConfig.turnstileAction || 'clipsearch_lead',
+          execution: 'execute',
+          appearance: 'interaction-only',
+          retry: 'auto',
+          'retry-interval': 3000,
+          'refresh-expired': 'auto',
+          'response-field': false,
+          callback: function (token) {
+            form._turnstileToken = token;
+            if (!form._turnstileExecutionActive || typeof form._turnstileOnToken !== 'function') return;
+            form._turnstileExecutionActive = false;
+            clearTurnstileTimeout(form);
+            form._turnstileOnToken(token);
+          },
+          'error-callback': function (code) {
+            form._turnstileToken = '';
+            if (!form._turnstileExecutionActive || typeof form._turnstileOnError !== 'function') return;
+            var suffix = code ? ' Код Cloudflare: ' + code + '.' : '';
+            form._turnstileOnError('Не удалось выполнить антиспам-проверку.' + suffix + ' Попробуйте ещё раз.');
+          },
+          'expired-callback': function () {
+            form._turnstileToken = '';
+          }
+        });
+      }
+      return api;
+    });
+  }
 
   function openLeadModal(trigger) {
     leadLastFocus = trigger || document.activeElement;
@@ -189,7 +265,7 @@
     }
     leadModal.hidden = false;
     document.body.classList.add('modal-open');
-    renderTurnstileWidgets(leadModal);
+    metrikaGoal('lead_open');
     var firstInput = leadModal.querySelector('input:not([type="hidden"]):not(.honeypot)');
     if (firstInput) window.setTimeout(function () { firstInput.focus(); }, 60);
   }
@@ -257,44 +333,265 @@
     var sendAnother = scope.querySelector('[data-send-another]');
 
     if (form) {
-      form.addEventListener('submit', function (event) {
-        event.preventDefault();
-        if (formError) formError.classList.add('is-hidden');
-        var submit = form.querySelector('[type="submit"]');
-        var initialText = submit.innerHTML;
+      var phoneInput = form.querySelector('[data-phone-input]');
+      var phoneCountry = form.querySelector('[data-phone-country]');
+      var phoneError = form.querySelector('[data-phone-error]');
+      var consentInput = form.querySelector('input[name="consent"]');
+      var consentError = form.querySelector('[data-consent-error]');
+      var phoneController = null;
+      var submit = form.querySelector('[type="submit"]');
+      var initialSubmitHtml = submit ? submit.innerHTML : '';
+
+      function setFieldError(input, errorNode, message) {
+        if (!input || !errorNode) return;
+        var field = input.closest('.form-field, .consent-field');
+        input.classList.toggle('is-invalid', Boolean(message));
+        input.setAttribute('aria-invalid', message ? 'true' : 'false');
+        errorNode.textContent = message || '';
+        if (field) field.classList.toggle('is-invalid', Boolean(message));
+      }
+
+      if (phoneInput && typeof window.intlTelInput === 'function') {
+        phoneController = window.intlTelInput(phoneInput, {
+          initialCountry: 'ru',
+          onlyCountries: ['ru', 'by', 'ge', 'kz', 'uz', 'az', 'am'],
+          countryOrder: ['ru', 'by', 'ge', 'kz', 'uz', 'az', 'am'],
+          countryNameLocale: 'ru',
+          countryNameOverrides: {
+            ru: 'Россия',
+            by: 'Беларусь',
+            ge: 'Грузия',
+            kz: 'Казахстан',
+            uz: 'Узбекистан',
+            az: 'Азербайджан',
+            am: 'Армения'
+          },
+          uiTranslations: {
+            selectedCountryAriaLabel: 'Изменить страну номера, выбрана ${countryName} (${dialCode})',
+            noCountrySelected: 'Выберите страну номера телефона',
+            countryListAriaLabel: 'Список стран',
+            searchPlaceholder: 'Поиск страны',
+            clearSearchAriaLabel: 'Очистить поиск',
+            searchEmptyState: 'Страны не найдены',
+            searchSummaryAria: function (count) {
+              return count === 0 ? 'Страны не найдены' : 'Найдено стран: ' + count;
+            }
+          },
+          separateDialCode: true,
+          nationalMode: true,
+          strictMode: true,
+          formatAsYouType: true,
+          countrySearch: true,
+          loadUtils: function () {
+            return import('/assets/vendor/intl-tel-input/js/utils.js');
+          }
+        });
+      }
+
+      if (phoneInput) {
+        phoneInput.addEventListener('input', function () {
+          var filtered = phoneInput.value.replace(/[^0-9+\s().-]/g, '');
+          if (filtered !== phoneInput.value) phoneInput.value = filtered;
+          phoneInput.setCustomValidity('');
+          setFieldError(phoneInput, phoneError, '');
+        });
+      }
+
+      Array.prototype.forEach.call(form.querySelectorAll('input[name="name"], input[name="email"], input[name="company"]'), function (input) {
+        input.addEventListener('input', function () {
+          input.setCustomValidity('');
+          setFieldError(input, form.querySelector('[data-error-for="' + input.name + '"]'), '');
+        });
+      });
+      if (consentInput) {
+        consentInput.addEventListener('change', function () {
+          setFieldError(consentInput, consentError, '');
+        });
+      }
+
+      function validatePhone() {
+        var raw = phoneInput ? phoneInput.value.trim() : '';
+        if (!raw) {
+          if (phoneInput) phoneInput.setCustomValidity('Укажите номер телефона.');
+          setFieldError(phoneInput, phoneError, 'Укажите номер телефона.');
+          return Promise.resolve(false);
+        }
+
+        if (phoneController) {
+          return Promise.resolve(phoneController.promise).catch(function () {}).then(function () {
+            if (!phoneController.isValidNumber()) {
+              phoneInput.setCustomValidity('Проверьте номер телефона.');
+              setFieldError(phoneInput, phoneError, 'Проверьте номер телефона.');
+              return false;
+            }
+            phoneInput.setCustomValidity('');
+            setFieldError(phoneInput, phoneError, '');
+            form._normalizedPhone = phoneController.getNumber();
+            if (phoneCountry) {
+              var selectedCountry = typeof phoneController.getSelectedCountry === 'function'
+                ? phoneController.getSelectedCountry()
+                : phoneController.getSelectedCountryData();
+              phoneCountry.value = selectedCountry && selectedCountry.iso2 ? selectedCountry.iso2 : '';
+            }
+            return true;
+          });
+        }
+
+        var normalized = raw.replace(/[^0-9+]/g, '');
+        if (!/^\+[1-9][0-9]{6,14}$/.test(normalized)) {
+          phoneInput.setCustomValidity('Введите номер с кодом страны, начиная с +.');
+          setFieldError(phoneInput, phoneError, 'Введите номер с кодом страны, начиная с +.');
+          return Promise.resolve(false);
+        }
+        phoneInput.setCustomValidity('');
+        setFieldError(phoneInput, phoneError, '');
+        form._normalizedPhone = normalized;
+        return Promise.resolve(true);
+      }
+
+      function validateForm() {
+        var valid = true;
+        var firstInvalid = null;
+        Array.prototype.forEach.call(['name', 'email', 'company'], function (name) {
+          var input = form.querySelector('input[name="' + name + '"]');
+          var errorNode = form.querySelector('[data-error-for="' + name + '"]');
+          if (!input) return;
+          var message = '';
+          if (!input.value.trim()) {
+            message = name === 'name' ? 'Укажите имя.' : name === 'company' ? 'Укажите компанию.' : 'Укажите email.';
+          } else if (name === 'email' && !input.validity.valid) {
+            message = 'Проверьте адрес электронной почты.';
+          }
+          setFieldError(input, errorNode, message);
+          if (message) {
+            valid = false;
+            if (!firstInvalid) firstInvalid = input;
+          }
+        });
+
+        var consentValid = Boolean(consentInput && consentInput.checked);
+        setFieldError(consentInput, consentError, consentValid ? '' : 'Подтвердите согласие на обработку данных.');
+        if (!consentValid) valid = false;
+
+        return validatePhone().then(function (phoneValid) {
+          if (!phoneValid) {
+            valid = false;
+            if (!firstInvalid) firstInvalid = phoneInput;
+          }
+          if (!firstInvalid && !consentValid) firstInvalid = consentInput;
+          if (!valid && firstInvalid) firstInvalid.focus({ preventScroll: false });
+          return valid;
+        });
+      }
+
+      function setPending(pending, label) {
+        if (!submit) return;
+        submit.disabled = pending;
+        submit.innerHTML = pending ? label : initialSubmitHtml;
+      }
+
+      function showFormError(message) {
+        if (!formError) return;
+        formError.textContent = message;
+        formError.classList.remove('is-hidden');
+      }
+
+      function stopTurnstile(message) {
+        resetTurnstileForForm(form);
+        setPending(false, '');
+        showFormError(message);
+      }
+
+      function sendForm(turnstileToken) {
         var sourceInput = form.querySelector('input[name="source"]');
         var sourceValue = sourceInput ? sourceInput.value : '';
-        submit.disabled = true;
-        submit.textContent = 'Отправляем…';
+        var formData = new FormData(form);
+        if (form._normalizedPhone) formData.set('phone', form._normalizedPhone);
+        if (turnstileToken) formData.set('cf-turnstile-response', turnstileToken);
+        setPending(true, 'Отправляем…');
 
         fetch(form.action, {
           method: 'POST',
-          body: new FormData(form),
+          body: formData,
           headers: { 'Accept': 'application/json' }
         })
           .then(function (response) {
-            return response.json().then(function (data) {
+            var resultHeader = response.headers.get('X-Clipsearch-Result') || '';
+            return response.text().then(function (body) {
+              var data = null;
+              try {
+                data = JSON.parse(body);
+              } catch (parseError) {
+                if (response.ok && resultHeader === 'sent') {
+                  return { ok: true, code: 'sent' };
+                }
+                throw new Error('Сервер вернул некорректный ответ. Заявка могла быть доставлена — свяжитесь с нами перед повторной отправкой.');
+              }
               if (!response.ok || !data.ok) throw new Error(data.message || 'Не удалось отправить заявку.');
               return data;
             });
           })
           .then(function () {
             form.reset();
+            form._normalizedPhone = '';
             if (sourceInput) sourceInput.value = sourceValue;
             resetTurnstileForForm(form);
             form.classList.add('is-hidden');
             if (success) success.classList.remove('is-hidden');
+            metrikaGoal('lead_success');
           })
           .catch(function (error) {
             resetTurnstileForForm(form);
-            if (!formError) return;
-            formError.textContent = error.message || 'Не удалось отправить заявку. Попробуйте ещё раз.';
-            formError.classList.remove('is-hidden');
+            showFormError(error.message || 'Не удалось отправить заявку. Попробуйте ещё раз.');
+            metrikaGoal('lead_error');
           })
           .then(function () {
-            if (!form.querySelector('[data-turnstile-widget]')) submit.disabled = false;
-            submit.innerHTML = initialText;
+            setPending(false, '');
           });
+      }
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        if (form._validationActive || form._turnstileExecutionActive || (submit && submit.disabled)) return;
+        if (formError) formError.classList.add('is-hidden');
+        form._validationActive = true;
+        setPending(true, 'Проверяем…');
+
+        validateForm().then(function (valid) {
+          form._validationActive = false;
+          if (!valid) {
+            setPending(false, '');
+            return;
+          }
+
+          if (!appConfig.turnstileSiteKey || !form.querySelector('[data-turnstile-widget]')) {
+            sendForm('');
+            return;
+          }
+
+          form._turnstileExecutionActive = true;
+          form._turnstileOnToken = sendForm;
+          form._turnstileOnError = stopTurnstile;
+          clearTurnstileTimeout(form);
+          form._turnstileTimeout = window.setTimeout(function () {
+            if (form._turnstileExecutionActive) {
+              stopTurnstile('Антиспам-проверка не ответила. Проверьте соединение и попробуйте ещё раз.');
+            }
+          }, 45000);
+
+          ensureTurnstile(form)
+            .then(function (api) {
+              if (!form._turnstileExecutionActive || !api) return;
+              api.execute(form._turnstileWidgetId);
+            })
+            .catch(function () {
+              stopTurnstile('Антиспам-проверка недоступна. Попробуйте позже или свяжитесь с нами по телефону.');
+            });
+        }).catch(function () {
+          form._validationActive = false;
+          setPending(false, '');
+          showFormError('Не удалось проверить данные формы. Обновите страницу и попробуйте ещё раз.');
+        });
       });
     }
 
@@ -302,7 +599,6 @@
       sendAnother.addEventListener('click', function () {
         if (success) success.classList.add('is-hidden');
         form.classList.remove('is-hidden');
-        renderTurnstileWidgets(scope);
         form.querySelector('input:not([type="hidden"]):not(.honeypot)').focus();
       });
     }

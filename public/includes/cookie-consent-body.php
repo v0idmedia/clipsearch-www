@@ -2,7 +2,7 @@
   <div class="cookie-consent__panel">
     <div class="cookie-consent__copy">
       <strong id="cookie-consent-title">Настройки cookies</strong>
-      <p id="cookie-consent-description">Мы используем необходимые технологии для работы сайта, защиты формы и сохранения выбранных настроек. Дополнительные cookies могут использоваться для аналитики и улучшения сайта только с вашего разрешения. Подробнее — в <a href="/docs/privacy-policy.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Политика конфиденциальности">политике конфиденциальности</a>.</p>
+      <p id="cookie-consent-description">Мы используем необходимые технологии для работы сайта, защиты формы и сохранения выбранных настроек. Яндекс Метрика и Вебвизор подключаются для аналитики и улучшения сайта только с вашего разрешения. Подробнее — в <a href="/docs/privacy-policy.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Политика конфиденциальности">политике конфиденциальности</a>.</p>
     </div>
     <div class="cookie-consent__actions">
       <button class="cookie-consent__button cookie-consent__button--primary" type="button" data-cookie-choice="all">Разрешить все</button>

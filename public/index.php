@@ -12,6 +12,7 @@ if ($turnstileSiteKey === '' && $isLocalRequest) {
     $turnstileSiteKey = '1x00000000000000000000BB';
 }
 $turnstileConfigured = $turnstileSiteKey !== '';
+$yandexMetrikaId = (string)preg_replace('/\D+/', '', (string)(getenv('YANDEX_METRIKA_ID') ?: ''));
 
 function icon(string $name, string $class = 'icon'): string
 {
@@ -79,15 +80,21 @@ function icon(string $name, string $class = 'icon'): string
   <meta name="twitter:image" content="https://clipsearch.ru/og.png">
   <link rel="preload" href="/assets/fonts/mulish-variable.ttf" as="font" type="font/ttf" crossorigin>
   <?php if ($turnstileConfigured): ?><link rel="preconnect" href="https://challenges.cloudflare.com"><?php endif; ?>
-  <link rel="stylesheet" href="/assets/style.css?v=20260901-3">
+  <link rel="stylesheet" href="/assets/vendor/intl-tel-input/css/intlTelInput.css">
+  <link rel="stylesheet" href="/assets/style.css?v=20260902-7">
   <?php require __DIR__ . '/includes/cookie-consent-head.php'; ?>
+  <script>window.CLIPSEARCH_CONFIG = <?= json_encode([
+      'turnstileSiteKey' => $turnstileSiteKey,
+      'turnstileAction' => 'clipsearch_lead',
+      'yandexMetrikaId' => $yandexMetrikaId,
+  ], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CLIP Search","applicationCategory":"BusinessApplication","operatingSystem":"Windows","description":"Программа автоматизации проверки размещения рекламных макетов на фотографиях стендов.","url":"https://clipsearch.ru/","image":"https://clipsearch.ru/og.png","provider":{"@type":"Organization","name":"VOID MEDIA","url":"https://voidmedia.ru/","telephone":"+7-499-677-68-83"},"offers":{"@type":"Offer","priceCurrency":"RUB","price":"49990","description":"Профессиональная лицензия до 5 пользователей за 49 990 рублей в год"}}</script>
 </head>
 <body>
 <main>
   <header class="site-header">
     <a href="#top" class="brand" aria-label="CLIP Search — на главную"><img src="/assets/logo.png" alt="CLIP Search"></a>
-    <nav aria-label="Основная навигация"><a href="#how">Как работает</a><a href="#features">Возможности</a><a href="#pricing">Тарифы</a></nav>
+    <nav aria-label="Основная навигация"><a href="#how">#Как работает</a><a href="#features">#Возможности</a><a href="#pricing">#Тарифы</a><a href="#custom-system">Автопроверка</a></nav>
     <a class="header-cta" href="#contact" data-open-form data-form-source="Шапка — Получить демо">Получить демо</a>
   </header>
 
@@ -103,7 +110,7 @@ function icon(string $name, string $class = 'icon'): string
     <div class="search-demo reveal delay-1" aria-label="Пример поиска макета на фотографии стенда">
       <div class="demo-topline"><span class="demo-dot"></span><span>CLIP Search / проверка размещения</span><span class="demo-status">AI анализирует</span></div>
       <div class="demo-body">
-        <div class="layout-card"><span>Искомый макет</span><img src="/assets/layout.jpg" alt="Искомый рекламный макет Билайн"><b>bogorodskoe.jpg</b></div>
+        <div class="layout-card"><span>Искомый макет</span><img src="/assets/layout.jpg" alt="Искомый рекламный макет"><b>maket.jpg</b></div>
         <div class="scan-line" aria-hidden="true"><?= icon('arrow') ?></div>
         <div class="stand-card"><img src="/assets/stand.jpg" alt="Фото рекламного стенда с несколькими объявлениями"><span class="match-box"><i>совпадение</i><b>96%</b></span></div>
       </div>
@@ -218,24 +225,25 @@ function icon(string $name, string $class = 'icon'): string
       <div class="contact-copy"><span class="kicker light">Покажите один макет</span><h2>А мы покажем, сколько часов он вернёт вашей команде</h2><p>Проведём демонстрацию CLIP Search на примере вашего фотоотчёта и предложим подходящую конфигурацию.</p><div class="contact-meta"><a href="tel:+74996776883"><?= icon('phone') ?> +7 (499) 677-68-83</a><a href="mailto:info@voidmedia.ru"><?= icon('mail') ?> info@voidmedia.ru</a></div></div>
       <div class="form-card contact-form-card" data-lead-scope>
         <div class="success-state<?= $submitted ? '' : ' is-hidden' ?>" data-success-state><span><?= icon('check') ?></span><h3>Заявка принята</h3><p>Спасибо! Мы свяжемся с вами, чтобы уточнить задачу и согласовать демонстрацию.</p><button type="button" data-send-another>Отправить ещё одну</button></div>
-        <form action="/submit.php" method="post" data-lead-form<?= $submitted ? ' class="is-hidden"' : '' ?> aria-labelledby="contact-form-title">
+        <form action="/submit.php" method="post" data-lead-form novalidate<?= $submitted ? ' class="is-hidden"' : '' ?> aria-labelledby="contact-form-title">
           <input type="hidden" name="source" value="Нижний блок — открытая форма">
+          <input type="hidden" name="phone_country" value="" data-phone-country>
           <div class="form-heading"><span id="contact-form-title">Заявка на демонстрацию</span><b>Ответим в рабочее время</b></div>
           <div class="form-grid">
-            <label><span>Имя</span><input required name="name" autocomplete="name" placeholder="Как к вам обращаться"></label>
-            <label><span>Телефон</span><input required name="phone" type="tel" autocomplete="tel" placeholder="+7 (___) ___-__-__"></label>
-            <label><span>Почта</span><input required name="email" type="email" autocomplete="email" placeholder="name@company.ru"></label>
-            <label><span>Компания</span><input required name="company" autocomplete="organization" placeholder="Название агентства"></label>
+            <label class="form-field"><span>Имя</span><input id="contact-name" required name="name" autocomplete="name" maxlength="120" placeholder="Как к вам обращаться" aria-describedby="contact-name-error"><small class="field-error" id="contact-name-error" role="tooltip" data-error-for="name"></small></label>
+            <label class="form-field form-field-phone"><span>Телефон</span><input id="contact-phone" required name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="Номер телефона" aria-describedby="contact-phone-error" data-phone-input><small class="field-error" id="contact-phone-error" role="tooltip" data-phone-error></small></label>
+            <label class="form-field"><span>Почта</span><input id="contact-email" required name="email" type="email" autocomplete="email" maxlength="190" placeholder="name@company.ru" aria-describedby="contact-email-error"><small class="field-error" id="contact-email-error" role="tooltip" data-error-for="email"></small></label>
+            <label class="form-field"><span>Компания</span><input id="contact-company" required name="company" autocomplete="organization" maxlength="190" placeholder="Название агентства" aria-describedby="contact-company-error"><small class="field-error" id="contact-company-error" role="tooltip" data-error-for="company"></small></label>
           </div>
           <input class="honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
           <?php if ($turnstileConfigured): ?>
-          <div class="turnstile-field" data-turnstile-widget data-sitekey="<?= htmlspecialchars($turnstileSiteKey, ENT_QUOTES, 'UTF-8') ?>" aria-label="Проверка защиты от автоматических отправок"></div>
+          <div class="turnstile-field" data-turnstile-widget data-sitekey="<?= htmlspecialchars($turnstileSiteKey, ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></div>
           <?php else: ?>
           <p class="turnstile-config-error">Форма временно недоступна. Позвоните нам или напишите на почту.</p>
           <?php endif; ?>
-          <label class="consent-check"><input required type="checkbox" name="consent" value="1"><span>Я согласен на <a href="/docs/personal-data-consent.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Согласие на обработку персональных данных">обработку персональных данных</a> и ознакомлен с <a href="/docs/privacy-policy.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Политика конфиденциальности">политикой конфиденциальности</a>.</span></label>
+          <div class="consent-field"><label class="consent-check"><input required type="checkbox" name="consent" value="1" aria-describedby="contact-consent-error"><span>Я согласен на <a href="/docs/personal-data-consent.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Согласие на обработку персональных данных">обработку персональных данных</a> и ознакомлен с <a href="/docs/privacy-policy.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Политика конфиденциальности">политикой конфиденциальности</a>.</span></label><small class="field-error" id="contact-consent-error" role="tooltip" data-consent-error></small></div>
           <p class="form-error<?= $initialError === '' ? ' is-hidden' : '' ?>" data-form-error role="alert"><?= htmlspecialchars($initialError, ENT_QUOTES, 'UTF-8') ?></p>
-          <button class="submit-button" type="submit" disabled>Получить демонстрацию <?= icon('arrow') ?></button>
+          <button class="submit-button" type="submit"<?= $turnstileConfigured ? '' : ' disabled' ?>>Получить демонстрацию <?= icon('arrow') ?></button>
         </form>
       </div>
     </div>
@@ -254,24 +262,25 @@ function icon(string $name, string $class = 'icon'): string
     <button class="modal-close" type="button" data-lead-close aria-label="Закрыть">×</button>
     <div class="form-card" data-lead-scope>
       <div class="success-state<?= $submitted ? '' : ' is-hidden' ?>" data-success-state><span><?= icon('check') ?></span><h3>Заявка принята</h3><p>Спасибо! Мы свяжемся с вами, чтобы уточнить задачу и согласовать демонстрацию.</p><button type="button" data-send-another>Отправить ещё одну</button></div>
-      <form id="lead-form" action="/submit.php" method="post" data-lead-form<?= $submitted ? ' class="is-hidden"' : '' ?>>
+      <form id="lead-form" action="/submit.php" method="post" data-lead-form novalidate<?= $submitted ? ' class="is-hidden"' : '' ?>>
         <input type="hidden" name="source" value="Всплывающая форма">
+        <input type="hidden" name="phone_country" value="" data-phone-country>
         <div class="form-heading"><span id="lead-modal-title">Оставить заявку</span><b>Ответим в рабочее время</b></div>
         <div class="form-grid">
-          <label><span>Имя</span><input required name="name" autocomplete="name" placeholder="Как к вам обращаться"></label>
-          <label><span>Телефон</span><input required name="phone" type="tel" autocomplete="tel" placeholder="+7 (___) ___-__-__"></label>
-          <label><span>Почта</span><input required name="email" type="email" autocomplete="email" placeholder="name@company.ru"></label>
-          <label><span>Компания</span><input required name="company" autocomplete="organization" placeholder="Название агентства"></label>
+          <label class="form-field"><span>Имя</span><input id="modal-name" required name="name" autocomplete="name" maxlength="120" placeholder="Как к вам обращаться" aria-describedby="modal-name-error"><small class="field-error" id="modal-name-error" role="tooltip" data-error-for="name"></small></label>
+          <label class="form-field form-field-phone"><span>Телефон</span><input id="modal-phone" required name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="Номер телефона" aria-describedby="modal-phone-error" data-phone-input><small class="field-error" id="modal-phone-error" role="tooltip" data-phone-error></small></label>
+          <label class="form-field"><span>Почта</span><input id="modal-email" required name="email" type="email" autocomplete="email" maxlength="190" placeholder="name@company.ru" aria-describedby="modal-email-error"><small class="field-error" id="modal-email-error" role="tooltip" data-error-for="email"></small></label>
+          <label class="form-field"><span>Компания</span><input id="modal-company" required name="company" autocomplete="organization" maxlength="190" placeholder="Название агентства" aria-describedby="modal-company-error"><small class="field-error" id="modal-company-error" role="tooltip" data-error-for="company"></small></label>
         </div>
         <input class="honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
         <?php if ($turnstileConfigured): ?>
-        <div class="turnstile-field" data-turnstile-widget data-sitekey="<?= htmlspecialchars($turnstileSiteKey, ENT_QUOTES, 'UTF-8') ?>" aria-label="Проверка защиты от автоматических отправок"></div>
+        <div class="turnstile-field" data-turnstile-widget data-sitekey="<?= htmlspecialchars($turnstileSiteKey, ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></div>
         <?php else: ?>
         <p class="turnstile-config-error">Форма временно недоступна. Позвоните нам или напишите на почту.</p>
         <?php endif; ?>
-        <label class="consent-check"><input required type="checkbox" name="consent" value="1"><span>Я согласен на <a href="/docs/personal-data-consent.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Согласие на обработку персональных данных">обработку персональных данных</a> и ознакомлен с <a href="/docs/privacy-policy.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Политика конфиденциальности">политикой конфиденциальности</a>.</span></label>
+        <div class="consent-field"><label class="consent-check"><input required type="checkbox" name="consent" value="1" aria-describedby="modal-consent-error"><span>Я согласен на <a href="/docs/personal-data-consent.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Согласие на обработку персональных данных">обработку персональных данных</a> и ознакомлен с <a href="/docs/privacy-policy.pdf" target="_blank" rel="noopener" data-pdf-modal data-pdf-title="Политика конфиденциальности">политикой конфиденциальности</a>.</span></label><small class="field-error" id="modal-consent-error" role="tooltip" data-consent-error></small></div>
         <p class="form-error<?= $initialError === '' ? ' is-hidden' : '' ?>" data-form-error role="alert"><?= htmlspecialchars($initialError, ENT_QUOTES, 'UTF-8') ?></p>
-        <button class="submit-button" type="submit" disabled>Получить демонстрацию <?= icon('arrow') ?></button>
+        <button class="submit-button" type="submit"<?= $turnstileConfigured ? '' : ' disabled' ?>>Получить демонстрацию <?= icon('arrow') ?></button>
         <div class="form-disclaimer"><p>Информация на сайте предназначена исключительно для юридических лиц и индивидуальных предпринимателей, приобретающих услуги в целях осуществления предпринимательской или профессиональной деятельности. Услуги физическим лицам для личных, семейных, домашних и иных нужд, не связанных с предпринимательской деятельностью, не оказываются.</p><p>Информация, размещённая на сайте, носит информационный характер и не является публичной офертой в соответствии со статьёй 437 ГК РФ. Условия оказания услуг определяются индивидуально и фиксируются в договоре.</p></div>
       </form>
     </div>
@@ -291,7 +300,7 @@ function icon(string $name, string $class = 'icon'): string
 </div>
 
 <?php require __DIR__ . '/includes/cookie-consent-body.php'; ?>
-<script src="/assets/main.js?v=20260901-3" defer></script>
-<?php if ($turnstileConfigured): ?><script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=clipsearchTurnstileReady" defer></script><?php endif; ?>
+<script src="/assets/vendor/intl-tel-input/js/intlTelInput.min.js" defer></script>
+<script src="/assets/main.js?v=20260902-3" defer></script>
 </body>
 </html>

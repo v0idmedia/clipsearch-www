@@ -71,7 +71,7 @@ img { display: block; max-width: 100%; }
 .scan-line { display: grid; place-items: center; color: var(--primary); animation: scanPulse 1.6s ease-in-out infinite; }
 .stand-card { position: relative; overflow: hidden; border: 8px solid #5a263d; border-radius: 7px; background: #ddd; box-shadow: 0 16px 34px rgba(36,19,31,.2); }
 .stand-card img { width: 100%; aspect-ratio: .72; object-fit: cover; }
-.match-box { position: absolute; left: 9%; top: 13%; width: 30%; height: 29%; display: flex; flex-direction: column; justify-content: space-between; padding: 6px; border: 3px solid var(--accent); box-shadow: 0 0 0 2px rgba(20,20,20,.3); color: #111; animation: matchGlow 1.8s ease-in-out infinite; }
+.match-box { position: absolute; left: 15%; top: 19%; width: 35%; height: 34%; display: flex; flex-direction: column; justify-content: space-between; padding: 6px; border: 3px solid var(--accent); box-shadow: 0 0 0 2px rgba(20,20,20,.3); color: #111; animation: matchGlow 1.8s ease-in-out infinite; }
 .match-box i { align-self: flex-start; background: var(--accent); font-size: 8px; font-weight: 900; font-style: normal; padding: 3px 5px; text-transform: uppercase; }
 .match-box b { align-self: flex-end; background: #fff; border-radius: 6px; padding: 3px 5px; font-size: 11px; }
 .demo-footer { justify-content: space-between; border-top: 1px solid #ece6f0; }
@@ -299,10 +299,32 @@ img { display: block; max-width: 100%; }
 .form-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 30px; }
 .form-heading span { font-size: 23px; font-weight: 900; }
 .form-heading b { padding: 6px 9px; color: #54710f; background: #eff8d8; border-radius: 99px; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.form-grid label > span { display: block; margin-bottom: 7px; color: #685f6d; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; }
+.form-grid { position: relative; z-index: 10; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; overflow: visible; }
+.form-grid label > span { position: relative; z-index: 1; display: block; margin-bottom: 7px; color: #685f6d; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; }
 .form-grid input { width: 100%; height: 48px; padding: 0 14px; border: 1px solid #e5dce9; border-radius: 13px; background: #faf8fb; font: inherit; }
 .form-grid input:focus { outline: 3px solid rgba(139,69,186,.16); border-color: #8b45ba; }
+.form-field { position: relative; z-index: 1; min-width: 0; overflow: visible; }
+.form-field.is-invalid { z-index: auto; }
+.form-grid input.is-invalid { border-color: #a73a72; outline: 3px solid rgba(167,58,114,.13); }
+.field-error { position: absolute; z-index: 1010; top: calc(100% + 7px); left: 10px; display: none; max-width: calc(100% - 20px); padding: 7px 10px; border-radius: 8px; color: #fff; background: #88305f; box-shadow: 0 10px 24px rgba(78,28,57,.22); font-size: 10px; font-weight: 800; font-style: normal; line-height: 1.3; pointer-events: none; }
+.field-error:not(:empty) { display: block; animation: fieldErrorIn .18s ease-out both; }
+.field-error::before { position: absolute; top: -4px; left: 14px; width: 8px; height: 8px; content: ''; background: #88305f; transform: rotate(45deg); }
+.form-field-phone .iti { width: 100%; }
+.form-field-phone .iti__tel-input { padding-left: 92px !important; }
+.form-field-phone .iti__selected-country-primary { padding-left: 12px; }
+.form-field-phone:focus-within { z-index: 60; }
+.form-field-phone .iti__country-container { z-index: 70; }
+.form-field-phone .iti__country-selector,
+.form-field-phone .iti__dropdown-content { z-index: 80; max-width: min(380px, calc(100vw - 32px)); border: 1px solid #e5dce9; border-radius: 13px; background: #fff; box-shadow: 0 18px 45px rgba(43,27,51,.16); overflow: hidden; }
+.form-field-phone .iti__search-input-wrapper { width: 100%; min-width: 0; border-color: #e5dce9; background: #fff; overflow: hidden; }
+.form-field-phone input.iti__search-input { width: 100%; min-width: 0; height: 46px; padding: 9px 40px !important; border: 0; border-radius: 0; outline: 0; box-shadow: none; color: #201a24; background: #fff; font: inherit; font-size: 12px; }
+.form-field-phone input.iti__search-input:focus { border: 0; outline: 0; box-shadow: inset 0 -2px 0 #8b45ba; }
+.form-field-phone .iti__search-icon { left: 13px; width: 17px; }
+.form-field-phone .iti__search-clear { right: 8px; }
+.form-field-phone .iti__country-list { width: 100%; max-width: 100%; padding: 4px 0; overflow-x: hidden; }
+.form-field-phone .iti__country { width: 100%; min-width: 0; padding: 10px 13px; overflow: hidden; }
+.form-field-phone .iti__country-name { min-width: 0; overflow: hidden; color: #201a24; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.form-field-phone .iti__dial-code { flex: 0 0 auto; margin-left: 12px; color: #7f7485; font-size: 11px; white-space: nowrap; }
 .contact-form-card { min-height: 0; }
 .contact-form-card .form-grid { grid-template-columns: 1fr; }
 .turnstile-field { width: 100%; min-height: 0; margin: 0; }
@@ -311,6 +333,9 @@ img { display: block; max-width: 100%; }
 .consent-check { display: grid; grid-template-columns: auto 1fr; gap: 9px; margin-top: 20px; align-items: start; color: #847b89; font-size: 10px; line-height: 1.55; }
 .consent-check input { margin-top: 2px; accent-color: #7330a8; }
 .consent-check a { color: #7330a8; text-decoration: underline; }
+.consent-field { position: relative; z-index: 1; overflow: visible; }
+.consent-field.is-invalid { z-index: auto; }
+.consent-field > .field-error { top: calc(100% + 2px); left: 25px; }
 .submit-button { width: 100%; height: 54px; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 22px; border: 0; border-radius: 14px; color: #fff; background: linear-gradient(135deg, #682498, #9548bd); font: inherit; font-size: 13px; font-weight: 900; cursor: pointer; box-shadow: 0 15px 30px rgba(104,36,152,.2); }
 .submit-button:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
 .submit-button svg { width: 18px; }
@@ -438,6 +463,7 @@ footer { padding: 45px max(20px, calc((100vw - 1180px) / 2)) 28px; background: #
 .pdf-panel iframe { width: 100%; height: 100%; border: 0; background: #ece8ef; }
 body.modal-open { overflow: hidden; }
 @keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(.98); } }
+@keyframes fieldErrorIn { from { opacity: 0; transform: translateY(-4px); } }
 
 @media (max-width: 560px) {
   .pdf-modal { padding: 8px; }
